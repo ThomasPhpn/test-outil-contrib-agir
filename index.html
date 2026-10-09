@@ -1,0 +1,693 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Proposer un contenu</title>
+<style>
+  :root {
+    --bg: #f6f7f9; --card: #fff; --text: #1c2430; --muted: #6b7686;
+    --primary: #2457d6; --primary-dark: #1b44a8; --border: #d9dee6;
+    --ok: #1d8a4e; --err: #c0392b; --radius: 14px;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  .wrap { max-width: 760px; margin: 0 auto; padding: 24px 16px 64px; }
+  h1 { font-size: 1.5rem; margin: 8px 0 4px; }
+  .lead { color: var(--muted); margin: 0 0 24px; }
+  .progress { display: flex; gap: 6px; margin-bottom: 8px; }
+  .progress span { flex: 1; height: 6px; border-radius: 3px; background: var(--border); transition: background .2s; }
+  .progress span.done { background: var(--primary); }
+  .step-label { color: var(--muted); font-size: .875rem; margin-bottom: 16px; }
+  .card { background: var(--card); border-radius: var(--radius); padding: 24px; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+  h2 { font-size: 1.25rem; margin: 0 0 16px; }
+  h2 + .hint { margin-top: -10px; margin-bottom: 14px; }
+  .choices { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+  .choice {
+    position: relative; text-align: left; background: var(--card); border: 2px solid var(--border); border-radius: 12px;
+    padding: 16px; cursor: pointer; font: inherit; color: inherit; transition: border-color .15s, background .15s;
+  }
+  .choice:hover { border-color: var(--primary); }
+  .choice:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible, .editable:focus-visible {
+    outline: 3px solid rgba(36,87,214,.35); outline-offset: 2px;
+  }
+  .choice.selected { border-color: var(--primary); background: #eef3ff; }
+  .choice.multi { padding-right: 44px; }
+  .choice.multi::after {
+    content: ""; position: absolute; top: 16px; right: 16px; width: 18px; height: 18px;
+    border: 2px solid var(--border); border-radius: 5px; background: #fff;
+  }
+  .choice.multi.selected::after {
+    content: "✓"; border-color: var(--primary); background: var(--primary); color: #fff;
+    font-size: 13px; line-height: 14px; text-align: center; font-weight: 700;
+  }
+  .choice strong { display: block; margin-bottom: 4px; }
+  .choice small { color: var(--muted); }
+  .field { margin-bottom: 18px; }
+  label { display: block; font-weight: 600; margin-bottom: 4px; }
+  .field-label { display: block; font-weight: 600; margin-bottom: 4px; }
+  label .opt, .field-label .opt { font-weight: 400; color: var(--muted); }
+  .hint { color: var(--muted); font-size: .85rem; margin: 2px 0 6px; }
+  .hint strong { color: var(--text); font-weight: 600; }
+  input[type=text], input[type=url], input[type=email], input[type=date], input[type=time], input[type=search], textarea, select {
+    width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px;
+    font: inherit; background: #fff; color: inherit;
+  }
+  textarea { min-height: 120px; resize: vertical; }
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 520px) { .row { grid-template-columns: 1fr; } }
+  .invalid { border-color: var(--err) !important; }
+  .error { color: var(--err); font-size: .85rem; margin-top: 4px; }
+  .nav { display: flex; justify-content: space-between; gap: 12px; margin-top: 24px; }
+  button.btn {
+    border: 0; border-radius: 10px; padding: 12px 20px; font: inherit; font-weight: 600; cursor: pointer;
+  }
+  .btn-primary { background: var(--primary); color: #fff; }
+  .btn-primary:hover { background: var(--primary-dark); }
+  .btn-primary:disabled { opacity: .6; cursor: wait; }
+  .btn-ghost { background: transparent; color: var(--muted); border: 1px solid var(--border) !important; }
+  .btn-ghost:hover { color: var(--text); }
+  .btn-small { padding: 8px 14px; font-size: .9rem; }
+  .media-item { display: grid; grid-template-columns: 1.4fr 1fr auto; gap: 8px; margin-bottom: 8px; align-items: start; }
+  @media (max-width: 520px) { .media-item { grid-template-columns: 1fr; } }
+  .remove { background: none; border: 0; color: var(--err); cursor: pointer; font-size: 1.4rem; line-height: 1; padding: 6px; }
+
+  /* Liste de cases à cocher filtrable */
+  .checklist-tools { display: flex; gap: 10px; align-items: center; margin-bottom: 8px; }
+  .checklist-tools input { flex: 1; }
+  .count { color: var(--muted); font-size: .85rem; white-space: nowrap; }
+  .checklist {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 0 16px;
+    max-height: 264px; overflow: auto; border: 1px solid var(--border); border-radius: 10px; padding: 8px 12px;
+  }
+  .checklist:focus { outline: none; }
+  .checklist label { font-weight: 400; display: flex; gap: 8px; align-items: flex-start; margin: 0; padding: 5px 0; cursor: pointer; }
+  .checklist input { margin: 4px 0 0; accent-color: var(--primary); flex: none; width: 16px; height: 16px; }
+  .checklist .empty { color: var(--muted); margin: 4px 0; }
+
+  /* Éditeur de texte enrichi */
+  .editor { border: 1px solid var(--border); border-radius: 10px; background: #fff; overflow: hidden; }
+  .toolbar { display: flex; flex-wrap: wrap; gap: 2px; padding: 6px; border-bottom: 1px solid var(--border); background: #f9fafb; }
+  .toolbar button {
+    border: 0; background: transparent; border-radius: 6px; padding: 5px 9px; min-width: 34px;
+    font: inherit; font-size: .9rem; cursor: pointer; color: var(--text);
+  }
+  .toolbar button:hover { background: #eceff4; }
+  .toolbar button[aria-pressed="true"] { background: #dfe8ff; color: var(--primary-dark); }
+  .toolbar .sep { width: 1px; background: var(--border); margin: 4px 4px; }
+  .editable { position: relative; min-height: 240px; max-height: 520px; overflow: auto; padding: 12px 14px; outline: none; }
+  .editable.is-empty::before { content: attr(data-placeholder); position: absolute; color: var(--muted); pointer-events: none; }
+  .editable.invalid { box-shadow: inset 0 0 0 2px var(--err); }
+  .editable > :first-child, .rich > :first-child { margin-top: 0; }
+  .editable p, .rich p { margin: 0 0 .8em; }
+  .editable h2, .rich h2 { font-size: 1.25rem; margin: 1em 0 .4em; }
+  .editable h3, .rich h3 { font-size: 1.08rem; margin: 1em 0 .4em; }
+  .editable blockquote, .rich blockquote { margin: 0 0 .8em; padding-left: 12px; border-left: 3px solid var(--border); color: #3d4757; }
+  .editable ul, .editable ol, .rich ul, .rich ol { margin: 0 0 .8em; padding-left: 1.4em; }
+  .editable a, .rich a { color: var(--primary); }
+
+  .recap dl { margin: 0; }
+  .recap dt { font-weight: 600; margin-top: 14px; color: var(--muted); font-size: .85rem; }
+  .recap dd { margin: 2px 0 0; white-space: pre-wrap; word-break: break-word; }
+  .recap dd.rich { white-space: normal; border-left: 3px solid var(--border); padding-left: 12px; }
+  .tag { display: inline-block; background: #eef3ff; color: var(--primary-dark); border-radius: 999px; padding: 2px 12px; font-size: .85rem; font-weight: 600; margin: 0 6px 6px 0; }
+  .hp { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+  .success { text-align: center; padding: 16px 0; }
+  .success .check { font-size: 3rem; color: var(--ok); }
+  .banner { background: #fff7e0; border: 1px solid #f0d98a; border-radius: 10px; padding: 10px 14px; margin-bottom: 16px; font-size: .9rem; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Proposer un contenu</h1>
+  <p class="lead">Quelques étapes pour nous transmettre votre actualité, votre événement ou une mise à jour d'article.</p>
+
+  <div id="demoBanner" class="banner" hidden>
+    Mode démo : aucune clé Web3Forms n'est configurée, le formulaire n'envoie rien. Voir la constante <code>WEB3FORMS_KEY</code> dans le code.
+  </div>
+
+  <div id="progress" class="progress" aria-hidden="true"></div>
+  <div id="stepLabel" class="step-label"></div>
+
+  <form id="form" class="card" novalidate>
+    <div id="stage" aria-live="polite"></div>
+    <div class="hp" aria-hidden="true">
+      <label>Ne pas remplir<input type="text" id="botcheck" tabindex="-1" autocomplete="off"></label>
+    </div>
+    <div class="nav" id="nav"></div>
+  </form>
+</div>
+
+<script>
+/* ============ CONFIGURATION ============ */
+// 1. Allez sur https://web3forms.com, saisissez thomas.philipponneau@golive.team
+// 2. Collez ici la clé d'accès reçue par email.
+const WEB3FORMS_KEY = "VOTRE_CLE_WEB3FORMS";
+const SITE_NAME = "Site – contributions";
+
+/* ============ RÉFÉRENTIELS ============ */
+const SOUS_RUBRIQUES = [
+  ["460", "Agir dans son entreprise"], ["448", "Alimentation"], ["445", "Bien jeter"],
+  ["434", "Calculer l’impact de sa vie pro"], ["433", "Calculer l’impact de ses achats"],
+  ["431", "Calculer l’impact de son alimentation"], ["432", "Calculer l’impact de son logement"],
+  ["430", "Calculer son empreinte carbone"], ["443", "Carburant"], ["435", "Chauffer"],
+  ["436", "Climatiser et rafraîchir"], ["446", "Composter et pailler"], ["441", "Eau"],
+  ["449", "Électroménager"], ["456", "En période de canicule"], ["442", "Énergie"],
+  ["438", "Entretenir"], ["444", "Éviter le gaspillage"], ["458", "Faire de l’activité physique"],
+  ["454", "Finance durable"], ["440", "Jardiner"], ["439", "Meubler et équiper"],
+  ["447", "Mieux choisir"], ["451", "Mode"], ["455", "Moins s’exposer aux pollutions"],
+  ["453", "Noël"], ["450", "Numérique"], ["437", "Rénover"], ["457", "Se protéger du bruit"],
+  ["571", "Shopping et économies"], ["459", "Télétravailler"], ["461", "Trajets domicile-travail"],
+  ["452", "Vacances et loisirs"],
+];
+
+const LOCALISATIONS = [
+  ["283", "Toutes les Régions"], ["294", "Auvergne-Rhône-Alpes"], ["290", "Bourgogne-Franche-Comté"],
+  ["284", "Bretagne"], ["287", "Centre-Val de Loire"], ["291", "Collectivités d'Outre-Mer"],
+  ["292", "Corse"], ["285", "Grand Est"], ["305", "Guadeloupe"], ["306", "Guyane"],
+  ["289", "Hauts-de-France"], ["311", "Ile de Clipperton"], ["293", "Île-de-France"],
+  ["307", "La Réunion"], ["301", "Martinique"], ["302", "Mayotte"], ["286", "Normandie"],
+  ["288", "Nouvelle-Aquitaine"], ["297", "Nouvelle-Calédonie"], ["298", "Occitanie"],
+  ["299", "Pays de la Loire"], ["304", "Polynésie française"], ["300", "Provence-Alpes-Côte d'Azur"],
+  ["309", "Saint-Barthélemy"], ["308", "Saint-Martin"], ["303", "Saint-Pierre-Et-Miquelon"],
+  ["312", "Terres australes et antarctiques françaises"], ["310", "Wallis et Futuna"],
+  ["296", "Européen"], ["295", "International"],
+];
+
+/* ============ DONNÉES ============ */
+const TARGETS = [
+  { id: "particuliers", label: "Particuliers", desc: "Contenu destiné au grand public" },
+  { id: "entreprises", label: "Entreprises", desc: "Contenu destiné aux professionnels" },
+  { id: "collectivites", label: "Collectivités", desc: "Contenu destiné aux collectivités et institutions" },
+  { id: "education", label: "Acteurs de l'éducation", desc: "Enseignants, établissements, formateurs" },
+];
+
+const TYPES = [
+  { id: "actualite", label: "Actualité", desc: "Une information, une annonce, une nouveauté", skipMedia: true, hideOptional: true,
+    fields: [
+      { id: "titre", label: "Titre", type: "text", required: true },
+      { id: "sous_rubriques", label: "Sous-rubriques", type: "multicheck", required: true, options: SOUS_RUBRIQUES,
+        hint: "Une ou plusieurs sous-rubriques.", requiredMsg: "Choisissez au moins une sous-rubrique." },
+      { id: "localisation", label: "Localisation", type: "select", required: false, options: LOCALISATIONS, placeholder: "- Aucun(e) -" },
+      { id: "chapo", label: "Chapô", type: "textarea", required: true, hint: "2 à 3 phrases qui résument l'actualité.", rows: 3 },
+      { id: "contenu", label: "Contenu", type: "wysiwyg", required: true,
+        placeholder: "Rédigez ou collez votre texte. Utilisez les intertitres pour structurer l'article." },
+      { id: "image_url", label: "Image", type: "url", required: true,
+        hint: "<strong>Format attendu : 850 × 638 px.</strong> Déposez l'image sur un service de transfert (WeTransfer, Smash, Google Drive…) et collez le lien ici. Vérifiez qu'il reste actif plusieurs jours.",
+        placeholder: "https://…" },
+      { id: "image_credit", label: "Crédit de l'image", type: "text", required: true },
+      { row: [
+        { id: "date_pub", label: "Date de publication", type: "date", required: true },
+        { id: "date_depub", label: "Date de dépublication", type: "date", required: true,
+          after: "date_pub", strict: true, afterMsg: "La date de dépublication doit suivre la date de publication." },
+      ] },
+    ] },
+  { id: "evenement", label: "Événement", desc: "Une date à retenir : conférence, atelier, webinaire…",
+    fields: [
+      { id: "titre", label: "Titre de l'événement", type: "text", required: true },
+      { id: "description", label: "Description", type: "textarea", required: true, rows: 6 },
+      { row: [
+        { id: "date_debut", label: "Date de début", type: "date", required: true },
+        { id: "date_fin", label: "Date de fin", type: "date", required: false,
+          after: "date_debut", afterMsg: "La date de fin précède la date de début." },
+      ] },
+      { row: [
+        { id: "heure_debut", label: "Heure de début", type: "time", required: false },
+        { id: "heure_fin", label: "Heure de fin", type: "time", required: false },
+      ] },
+      { id: "lieu", label: "Lieu ou lien de visioconférence", type: "text", required: true },
+      { id: "public", label: "Public concerné", type: "text", required: false },
+      { id: "lien_inscription", label: "Lien d'inscription", type: "url", required: false },
+      { id: "contact_event", label: "Contact pour l'événement", type: "text", required: false, hint: "Email ou téléphone à afficher publiquement." },
+    ] },
+  { id: "maj", label: "Mise à jour d'article", desc: "Corriger, compléter ou retirer un contenu existant",
+    fields: [
+      { id: "url_article", label: "Adresse de l'article concerné", type: "url", required: true },
+      { id: "nature", label: "Nature de la modification", type: "select", required: true,
+        options: ["Correction", "Ajout d'information", "Suppression d'information", "Autre"] },
+      { id: "texte_propose", label: "Texte proposé", type: "textarea", required: true, rows: 7,
+        hint: "Indiquez précisément le passage à modifier et le nouveau texte." },
+      { id: "justification", label: "Pourquoi cette modification ?", type: "textarea", required: false, rows: 3 },
+    ] },
+];
+
+const TOOLS = [
+  { cmd: "bold", icon: "<b>G</b>", title: "Gras", toggle: true },
+  { cmd: "italic", icon: "<i>I</i>", title: "Italique", toggle: true },
+  { sep: true },
+  { cmd: "block", block: "h2", icon: "T2", title: "Intertitre", toggle: true },
+  { cmd: "block", block: "h3", icon: "T3", title: "Sous-intertitre", toggle: true },
+  { cmd: "block", block: "p", icon: "¶", title: "Paragraphe", toggle: true },
+  { sep: true },
+  { cmd: "insertUnorderedList", icon: "• Liste", title: "Liste à puces", toggle: true },
+  { cmd: "insertOrderedList", icon: "1. Liste", title: "Liste numérotée", toggle: true },
+  { cmd: "block", block: "blockquote", icon: "❝", title: "Citation", toggle: true },
+  { sep: true },
+  { cmd: "link", icon: "Lien", title: "Ajouter ou retirer un lien", toggle: true },
+  { cmd: "removeFormat", icon: "<s>T</s>", title: "Effacer la mise en forme" },
+];
+
+/* ============ ÉTAT ============ */
+const ALL_STEPS = [
+  { id: "cible", label: "Cible" }, { id: "type", label: "Type de contenu" }, { id: "details", label: "Détails" },
+  { id: "medias", label: "Médias" }, { id: "contact", label: "Contact" }, { id: "recap", label: "Récapitulatif" },
+];
+const emptyState = () => ({ step: 0, targets: [], type: null, data: {}, media: [{ url: "", legende: "" }], contact: { nom: "", email: "" }, sent: false });
+const state = emptyState();
+
+const $ = (s) => document.querySelector(s);
+const stage = $("#stage"), nav = $("#nav");
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const norm = (s) => String(s).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+const typeObj = () => TYPES.find((t) => t.id === state.type);
+const targetLabels = () => TARGETS.filter((t) => state.targets.includes(t.id)).map((t) => t.label);
+const flatFields = (t) => t.fields.flatMap((f) => (f.row ? f.row : [f]));
+const steps = () => ALL_STEPS.filter((s) => !(s.id === "medias" && typeObj()?.skipMedia));
+const cur = () => steps()[state.step].id;
+const pairs = (f) => f.options.map((o) => (Array.isArray(o) ? o : [o, o]));
+const optLabel = (f, v) => (pairs(f).find(([k]) => k === v) || [v, v])[1];
+
+/* ============ TEXTE ENRICHI ============ */
+const ALLOWED = ["P", "BR", "STRONG", "EM", "H2", "H3", "UL", "OL", "LI", "A", "BLOCKQUOTE"];
+const RENAME = { B: "STRONG", I: "EM", H1: "H2", H4: "H3", H5: "H3", H6: "H3" };
+const DROP = ["SCRIPT", "STYLE", "IFRAME", "OBJECT", "EMBED", "TEMPLATE", "META", "LINK", "TITLE", "IMG", "SVG", "VIDEO", "AUDIO"];
+const BLOCK_OUT = ["P", "UL", "OL", "H2", "H3", "BLOCKQUOTE"];
+const BLOCKISH = ["DIV", "SECTION", "ARTICLE", "HEADER", "FOOTER", "TR", "TABLE", "PRE"];
+
+function sanitizeHTML(html) {
+  const tpl = document.createElement("template");
+  tpl.innerHTML = html || "";
+  const clean = (node) => {
+    const out = document.createDocumentFragment();
+    node.childNodes.forEach((ch) => {
+      if (ch.nodeType === 3) { out.appendChild(document.createTextNode(ch.nodeValue)); return; }
+      if (ch.nodeType !== 1 || DROP.includes(ch.tagName)) return;
+      const tag = RENAME[ch.tagName] || ch.tagName;
+      const inner = clean(ch.tagName === "TEMPLATE" ? ch.content : ch);
+      if (tag === "A") {
+        const href = (ch.getAttribute("href") || "").trim();
+        if (/^(https?:|mailto:)/i.test(href)) { const a = document.createElement("a"); a.setAttribute("href", href); a.appendChild(inner); out.appendChild(a); }
+        else out.appendChild(inner);
+      } else if (tag === "P" && [...inner.childNodes].some((n) => BLOCK_OUT.includes(n.nodeName))) {
+        out.appendChild(inner); // pas de liste ou d'intertitre à l'intérieur d'un paragraphe
+      } else if (ALLOWED.includes(tag)) {
+        const el = document.createElement(tag.toLowerCase()); el.appendChild(inner); out.appendChild(el);
+      } else {
+        out.appendChild(inner);
+        if (BLOCKISH.includes(ch.tagName)) out.appendChild(document.createElement("br"));
+      }
+    });
+    return out;
+  };
+  const div = document.createElement("div");
+  div.appendChild(clean(tpl.content));
+  return div.innerHTML.replace(/<(p|h2|h3|li|blockquote)>(\s|&nbsp;|<br>)*<\/\1>/g, "").replace(/(<br>\s*)+$/, "").trim();
+}
+
+function textOf(html) {
+  const tpl = document.createElement("template"); tpl.innerHTML = html || "";
+  return tpl.content.textContent.replace(/\u00a0/g, " ");
+}
+
+function htmlToText(html) {
+  const tpl = document.createElement("template"); tpl.innerHTML = sanitizeHTML(html);
+  const walk = (node) => {
+    let s = "";
+    node.childNodes.forEach((ch) => {
+      if (ch.nodeType === 3) { s += ch.nodeValue.replace(/\s+/g, " "); return; }
+      const t = ch.tagName, inner = () => walk(ch).trim();
+      if (t === "BR") s += "\n";
+      else if (t === "P") s += "\n" + inner() + "\n";
+      else if (t === "BLOCKQUOTE") s += "\n« " + inner() + " »\n";
+      else if (t === "H2") s += "\n## " + inner() + "\n";
+      else if (t === "H3") s += "\n### " + inner() + "\n";
+      else if (t === "UL" || t === "OL") {
+        let n = 0; s += "\n";
+        ch.childNodes.forEach((li) => { if (li.tagName === "LI") { n++; s += (t === "OL" ? n + ". " : "- ") + walk(li).trim() + "\n"; } });
+      }
+      else if (t === "A") s += walk(ch) + " (" + ch.getAttribute("href") + ")";
+      else if (t === "STRONG") s += "**" + walk(ch) + "**";
+      else s += walk(ch);
+    });
+    return s;
+  };
+  return walk(tpl.content).replace(/[ \t]+\n/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
+}
+
+/* ============ VALEURS ============ */
+function hasValue(f, v) {
+  if (Array.isArray(v)) return v.length > 0;
+  if (f.type === "wysiwyg") return !!textOf(v).trim();
+  return !!String(v ?? "").trim();
+}
+function displayValue(f, v) {
+  if (f.type === "multicheck") return v.map((id) => optLabel(f, id)).join(", ");
+  if (f.type === "select") return optLabel(f, v);
+  if (f.type === "date") return v.split("-").reverse().join("/");
+  return v;
+}
+function messageValue(f, v) {
+  if (f.type === "wysiwyg") return htmlToText(v);
+  return displayValue(f, v);
+}
+
+/* ============ RENDU ============ */
+function renderProgress() {
+  const st = steps();
+  $("#progress").innerHTML = st.map((_, i) => `<span class="${i <= state.step || state.sent ? "done" : ""}"></span>`).join("");
+  $("#stepLabel").textContent = state.sent ? "" : `Étape ${state.step + 1} sur ${st.length} · ${st[state.step].label}`;
+}
+
+const optTag = (f) => (f.required || typeObj()?.hideOptional ? "" : ' <span class="opt">(facultatif)</span>');
+const hintTag = (f) => (f.hint ? `<div class="hint">${f.hint}</div>` : ""); // hints : texte interne, non saisi par l'utilisateur
+const errTag = (f) => `<div class="error" id="e_${f.id}" hidden></div>`;
+
+function countLabel(n) { return n === 0 ? "Aucune sélection" : n === 1 ? "1 sélectionnée" : `${n} sélectionnées`; }
+
+function multicheckHTML(f) {
+  const sel = state.data[f.id] || [];
+  return `<div class="field"><label for="q_${f.id}">${esc(f.label)}${optTag(f)}</label>${hintTag(f)}
+    <div class="checklist-tools"><input type="search" id="q_${f.id}" data-filter="${f.id}" placeholder="Filtrer la liste…" autocomplete="off" aria-label="Filtrer les ${esc(f.label.toLowerCase())}">
+    <span class="count" id="n_${f.id}" aria-live="polite">${countLabel(sel.length)}</span></div>
+    <div class="checklist" id="f_${f.id}" tabindex="-1" role="group" aria-label="${esc(f.label)}">
+      ${pairs(f).map(([v, l]) => `<label data-search="${esc(norm(l))}"><input type="checkbox" data-multi="${f.id}" value="${esc(v)}" ${sel.includes(v) ? "checked" : ""}><span>${esc(l)}</span></label>`).join("")}
+      <p class="empty" hidden>Aucune sous-rubrique ne correspond.</p>
+    </div>${errTag(f)}</div>`;
+}
+
+function editorHTML(f) {
+  const v = sanitizeHTML(state.data[f.id] || "");
+  const empty = !textOf(v).trim();
+  const tools = TOOLS.map((t) => t.sep ? '<span class="sep" aria-hidden="true"></span>'
+    : `<button type="button" data-cmd="${t.cmd}" ${t.block ? `data-block="${t.block}"` : ""} title="${esc(t.title)}" aria-label="${esc(t.title)}" ${t.toggle ? 'aria-pressed="false"' : ""}>${t.icon}</button>`).join("");
+  return `<div class="field"><span class="field-label" id="l_${f.id}">${esc(f.label)}${optTag(f)}</span>${hintTag(f)}
+    <div class="editor"><div class="toolbar" role="toolbar" aria-label="Mise en forme du contenu">${tools}</div>
+    <div class="editable ${empty ? "is-empty" : ""}" id="f_${f.id}" data-id="${f.id}" contenteditable="true" role="textbox" aria-multiline="true"
+      aria-labelledby="l_${f.id}" data-placeholder="${esc(f.placeholder || "")}">${v}</div></div>${errTag(f)}</div>`;
+}
+
+function fieldHTML(f) {
+  if (f.type === "multicheck") return multicheckHTML(f);
+  if (f.type === "wysiwyg") return editorHTML(f);
+  const v = esc(state.data[f.id] ?? "");
+  const ph = f.placeholder && f.type !== "select" ? ` placeholder="${esc(f.placeholder)}"` : "";
+  let input;
+  if (f.type === "textarea") input = `<textarea id="f_${f.id}" data-id="${f.id}" rows="${f.rows || 5}"${ph}>${v}</textarea>`;
+  else if (f.type === "select") input = `<select id="f_${f.id}" data-id="${f.id}"><option value="">${esc(f.placeholder || "Choisir…")}</option>${pairs(f).map(([k, l]) => `<option value="${esc(k)}" ${state.data[f.id] === k ? "selected" : ""}>${esc(l)}</option>`).join("")}</select>`;
+  else input = `<input type="${f.type}" id="f_${f.id}" data-id="${f.id}" value="${v}"${ph}>`;
+  return `<div class="field"><label for="f_${f.id}">${esc(f.label)}${optTag(f)}</label>${hintTag(f)}${input}${errTag(f)}</div>`;
+}
+
+function mediaHTML() {
+  return state.media.map((m, i) => `
+    <div class="media-item">
+      <div><input type="url" placeholder="https://…" aria-label="Lien du média ${i + 1}" data-media="${i}" data-k="url" value="${esc(m.url)}"><div class="error" id="m_${i}" hidden></div></div>
+      <input type="text" placeholder="Légende ou crédit" aria-label="Légende du média ${i + 1}" data-media="${i}" data-k="legende" value="${esc(m.legende)}">
+      ${state.media.length > 1 ? `<button type="button" class="remove" data-remove="${i}" aria-label="Retirer ce lien">×</button>` : "<span></span>"}
+    </div>`).join("");
+}
+
+function render() {
+  renderProgress();
+  if (state.sent) {
+    stage.innerHTML = `<div class="success"><div class="check">✓</div><h2>Merci, votre contribution est envoyée</h2>
+      <p>Notre équipe l'a bien reçue et reviendra vers vous à l'adresse <strong>${esc(state.contact.email)}</strong> si nécessaire.</p>
+      <button type="button" class="btn btn-primary" id="again">Proposer un autre contenu</button></div>`;
+    nav.innerHTML = "";
+    $("#again").onclick = reset;
+    return;
+  }
+  const id = cur();
+  let html = "", nextLabel = "Continuer";
+  if (id === "cible") {
+    html = `<h2>À qui s'adresse ce contenu ?</h2><p class="hint">Plusieurs choix possibles.</p><div class="choices">${TARGETS.map((t) => {
+      const on = state.targets.includes(t.id);
+      return `<button type="button" class="choice multi ${on ? "selected" : ""}" data-target="${t.id}" aria-pressed="${on}"><strong>${esc(t.label)}</strong><small>${esc(t.desc)}</small></button>`;
+    }).join("")}</div><div class="error" id="e_step" hidden></div>`;
+  } else if (id === "type") {
+    html = `<h2>Quel type de contenu souhaitez-vous proposer ?</h2><div class="choices">${TYPES.map((t) => `
+      <button type="button" class="choice ${state.type === t.id ? "selected" : ""}" data-type="${t.id}"><strong>${esc(t.label)}</strong><small>${esc(t.desc)}</small></button>`).join("")}</div>`;
+  } else if (id === "details") {
+    html = `<h2>${esc(typeObj().label)}</h2>` + typeObj().fields.map((f) => f.row ? `<div class="row">${f.row.map(fieldHTML).join("")}</div>` : fieldHTML(f)).join("");
+  } else if (id === "medias") {
+    html = `<h2>Y a-t-il des médias à associer ?</h2><p class="hint">Photos, vidéos, documents : collez un lien (Drive, WeTransfer, YouTube…). Étape facultative.</p>
+      <div id="mediaList">${mediaHTML()}</div>
+      ${state.media.length < 5 ? '<button type="button" class="btn btn-ghost btn-small" id="addMedia">+ Ajouter un lien</button>' : ""}`;
+  } else if (id === "contact") {
+    html = `<h2>Contact</h2>
+      <div class="field"><label for="c_nom">Nom et prénom</label><input type="text" id="c_nom" data-c="nom" value="${esc(state.contact.nom)}"><div class="error" id="e_nom" hidden></div></div>
+      <div class="field"><label for="c_email">Email</label><input type="email" id="c_email" data-c="email" value="${esc(state.contact.email)}"><div class="error" id="e_email" hidden></div></div>`;
+  } else {
+    nextLabel = "Envoyer ma contribution";
+    const items = flatFields(typeObj()).filter((f) => hasValue(f, state.data[f.id])).map((f) => {
+      const v = state.data[f.id];
+      if (f.type === "wysiwyg") return `<dt>${esc(f.label)}</dt><dd class="rich">${sanitizeHTML(v)}</dd>`;
+      return `<dt>${esc(f.label)}</dt><dd>${esc(displayValue(f, v))}</dd>`;
+    }).join("");
+    const meds = typeObj().skipMedia ? "" : state.media.filter((m) => m.url).map((m) => `${m.url}${m.legende ? " — " + m.legende : ""}`).join("\n");
+    html = `<h2>Vérifiez votre contribution</h2><div class="recap">
+      ${targetLabels().map((l) => `<span class="tag">${esc(l)}</span>`).join("")}<span class="tag">${esc(typeObj().label)}</span>
+      <dl>${items}${meds ? `<dt>Médias</dt><dd>${esc(meds)}</dd>` : ""}
+      <dt>Contact</dt><dd>${esc(state.contact.nom)} · ${esc(state.contact.email)}</dd></dl></div>
+      <div class="error" id="e_send" hidden></div>`;
+  }
+  stage.innerHTML = html;
+  const back = state.step > 0 ? '<button type="button" class="btn btn-ghost" id="back">Retour</button>' : "<span></span>";
+  const next = id === "type" ? "" : `<button type="submit" class="btn btn-primary" id="next">${nextLabel}</button>`;
+  nav.innerHTML = back + next;
+  if ($("#back")) $("#back").onclick = () => { state.step--; render(); window.scrollTo({ top: 0 }); };
+  const first = stage.querySelector("input, textarea, select");
+  if (first && ["details", "medias", "contact"].includes(id)) first.focus({ preventScroll: true });
+}
+
+/* ============ VALIDATION ============ */
+const isUrl = (s) => { try { const u = new URL(s); return u.protocol === "http:" || u.protocol === "https:"; } catch { return false; } };
+const isEmail = (s) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s);
+function setErr(id, msg, inputId) {
+  const el = document.getElementById(id); if (!el) return;
+  el.textContent = msg || ""; el.hidden = !msg;
+  const inp = document.getElementById(inputId); if (inp) inp.classList.toggle("invalid", !!msg);
+}
+function validate() {
+  let ok = true;
+  const id = cur();
+  if (id === "cible") {
+    const msg = state.targets.length ? "" : "Choisissez au moins une cible.";
+    setErr("e_step", msg); if (msg) ok = false;
+  } else if (id === "details") {
+    for (const f of flatFields(typeObj())) {
+      const v = state.data[f.id], filled = hasValue(f, v);
+      let msg = "";
+      if (f.required && !filled) msg = f.requiredMsg || "Ce champ est obligatoire.";
+      else if (filled && f.type === "url" && !isUrl(v.trim())) msg = "Saisissez une adresse valide commençant par https://";
+      else if (filled && f.after && state.data[f.after] && (f.strict ? v <= state.data[f.after] : v < state.data[f.after])) msg = f.afterMsg;
+      setErr("e_" + f.id, msg, "f_" + f.id); if (msg) ok = false;
+    }
+  } else if (id === "medias") {
+    state.media.forEach((m, i) => {
+      const msg = m.url.trim() && !isUrl(m.url.trim()) ? "Lien invalide (https://…)." : "";
+      setErr("m_" + i, msg); if (msg) ok = false;
+    });
+  } else if (id === "contact") {
+    const n = state.contact.nom.trim(), e = state.contact.email.trim();
+    setErr("e_nom", n ? "" : "Merci d'indiquer votre nom.", "c_nom"); if (!n) ok = false;
+    const em = !e ? "Merci d'indiquer votre email." : !isEmail(e) ? "Adresse email invalide." : "";
+    setErr("e_email", em, "c_email"); if (em) ok = false;
+  }
+  if (!ok) {
+    const bad = stage.querySelector(".invalid");
+    if (bad) { bad.focus(); bad.scrollIntoView({ block: "center", behavior: "smooth" }); }
+  }
+  return ok;
+}
+
+/* ============ ENVOI ============ */
+function buildMessage() {
+  const lines = [`Cible(s) : ${targetLabels().join(", ")}`, `Type de contenu : ${typeObj().label}`, ""];
+  for (const f of flatFields(typeObj())) {
+    const v = state.data[f.id];
+    if (hasValue(f, v)) lines.push(`${f.label} :\n${messageValue(f, v)}\n`);
+  }
+  const meds = typeObj().skipMedia ? [] : state.media.filter((m) => m.url.trim());
+  if (meds.length) { lines.push("Médias :"); meds.forEach((m) => lines.push(`- ${m.url}${m.legende ? " (" + m.legende + ")" : ""}`)); lines.push(""); }
+  lines.push("Contact :", `${state.contact.nom} <${state.contact.email}>`);
+  return lines.join("\n");
+}
+
+async function send() {
+  const btn = $("#next"); btn.disabled = true; btn.textContent = "Envoi en cours…";
+  setErr("e_send", "");
+  if ($("#botcheck").value) { state.sent = true; render(); return; } // robot : on fait semblant
+  const title = state.data.titre || state.data.url_article || "";
+  const payload = {
+    access_key: WEB3FORMS_KEY,
+    subject: `[${targetLabels().join(", ")}] ${typeObj().label}${title ? " – " + title : ""}`,
+    from_name: SITE_NAME,
+    name: state.contact.nom,
+    email: state.contact.email,
+    message: buildMessage(),
+    cible: targetLabels().join(", "),
+    type_de_contenu: typeObj().label,
+    botcheck: "",
+  };
+  // Version HTML du texte enrichi, prête à coller dans le back-office (mode « Source »)
+  for (const f of flatFields(typeObj())) {
+    if (f.type === "wysiwyg" && hasValue(f, state.data[f.id])) payload[`${f.id}_html`] = sanitizeHTML(state.data[f.id]);
+  }
+  if (WEB3FORMS_KEY === "VOTRE_CLE_WEB3FORMS") {
+    console.log("Mode démo – payload :", payload);
+    console.log(payload.message);
+    await new Promise((r) => setTimeout(r, 600)); state.sent = true; render(); return;
+  }
+  try {
+    const res = await fetch("https://api.web3forms.com/submit", {
+      method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json" }, body: JSON.stringify(payload),
+    });
+    const json = await res.json();
+    if (!res.ok || !json.success) throw new Error(json.message || "Erreur");
+    state.sent = true; render();
+  } catch (err) {
+    btn.disabled = false; btn.textContent = "Envoyer ma contribution";
+    setErr("e_send", "L'envoi a échoué. Vérifiez votre connexion et réessayez.");
+  }
+}
+
+function reset() {
+  Object.assign(state, emptyState());
+  render(); window.scrollTo({ top: 0 });
+}
+
+/* ============ ÉDITEUR : COMMANDES ============ */
+function closestLink(ed) {
+  let n = getSelection().anchorNode;
+  while (n && n !== ed) { if (n.nodeName === "A") return n; n = n.parentNode; }
+  return null;
+}
+function syncEditor(ed) {
+  state.data[ed.dataset.id] = ed.innerHTML;
+  ed.classList.toggle("is-empty", !ed.textContent.replace(/\u00a0/g, " ").trim());
+  ed.classList.remove("invalid");
+}
+function updateToolbar() {
+  const ed = stage.querySelector(".editable"); if (!ed) return;
+  const sel = getSelection(); if (!sel.rangeCount || !ed.contains(sel.anchorNode)) return;
+  const block = String(document.queryCommandValue("formatBlock") || "").toLowerCase();
+  ed.closest(".editor").querySelectorAll("[data-cmd][aria-pressed]").forEach((b) => {
+    let on = false;
+    if (b.dataset.block) on = block === b.dataset.block;
+    else if (b.dataset.cmd === "link") on = !!closestLink(ed);
+    else on = document.queryCommandState(b.dataset.cmd);
+    b.setAttribute("aria-pressed", on);
+  });
+}
+function runTool(btn) {
+  const ed = btn.closest(".editor").querySelector(".editable");
+  ed.focus();
+  const cmd = btn.dataset.cmd;
+  if (cmd === "block") {
+    const current = String(document.queryCommandValue("formatBlock") || "").toLowerCase();
+    const b = btn.dataset.block;
+    document.execCommand("formatBlock", false, `<${current === b && b !== "p" ? "p" : b}>`);
+  } else if (cmd === "link") {
+    const a = closestLink(ed);
+    const sel = getSelection();
+    if (a) {
+      const r = document.createRange(); r.selectNodeContents(a); sel.removeAllRanges(); sel.addRange(r);
+      document.execCommand("unlink");
+    } else {
+      const range = sel.rangeCount ? sel.getRangeAt(0).cloneRange() : null;
+      const url = (prompt("Adresse du lien (https://… ou mailto:…)", "https://") || "").trim();
+      ed.focus();
+      if (range) { sel.removeAllRanges(); sel.addRange(range); }
+      if (!url || url === "https://") return;
+      if (!/^(https?:\/\/|mailto:)/i.test(url)) { alert("Le lien doit commencer par https:// ou mailto:"); return; }
+      if (range && !range.collapsed) document.execCommand("createLink", false, url);
+      else document.execCommand("insertHTML", false, `<a href="${esc(url)}">${esc(url)}</a>&nbsp;`);
+    }
+  } else {
+    document.execCommand(cmd, false, null);
+  }
+  syncEditor(ed); updateToolbar();
+}
+
+/* ============ ÉVÉNEMENTS ============ */
+stage.addEventListener("mousedown", (e) => { if (e.target.closest(".toolbar button")) e.preventDefault(); }); // garde la sélection
+stage.addEventListener("click", (e) => {
+  const t = e.target.closest("[data-target]"), ty = e.target.closest("[data-type]"), tool = e.target.closest("[data-cmd]");
+  if (tool) { runTool(tool); return; }
+  if (t) {
+    const i = state.targets.indexOf(t.dataset.target);
+    if (i < 0) state.targets.push(t.dataset.target); else state.targets.splice(i, 1);
+    t.classList.toggle("selected", i < 0); t.setAttribute("aria-pressed", i < 0);
+    setErr("e_step", "");
+  } else if (ty) {
+    if (state.type !== ty.dataset.type) { state.data = {}; state.media = [{ url: "", legende: "" }]; } // champs différents selon le type
+    state.type = ty.dataset.type; state.step = 2; render(); window.scrollTo({ top: 0 });
+  } else if (e.target.id === "addMedia") { state.media.push({ url: "", legende: "" }); render(); }
+  else if (e.target.dataset.remove !== undefined) { state.media.splice(+e.target.dataset.remove, 1); render(); }
+});
+stage.addEventListener("input", (e) => {
+  const el = e.target;
+  if (el.dataset.filter) {
+    const q = norm(el.value.trim()), box = $("#f_" + el.dataset.filter);
+    let shown = 0;
+    box.querySelectorAll("label").forEach((l) => { const hit = !q || l.dataset.search.includes(q); l.hidden = !hit; if (hit) shown++; });
+    box.querySelector(".empty").hidden = shown > 0;
+    return;
+  }
+  if (el.dataset.multi) {
+    const id = el.dataset.multi;
+    state.data[id] = [...stage.querySelectorAll(`[data-multi="${id}"]:checked`)].map((c) => c.value);
+    $("#n_" + id).textContent = countLabel(state.data[id].length);
+    el.closest(".invalid")?.classList.remove("invalid");
+    setErr("e_" + id, "");
+    return;
+  }
+  if (el.isContentEditable && el.dataset.id) { syncEditor(el); return; }
+  if (el.dataset.id) state.data[el.dataset.id] = el.value;
+  else if (el.dataset.c) state.contact[el.dataset.c] = el.value;
+  else if (el.dataset.media !== undefined) state.media[+el.dataset.media][el.dataset.k] = el.value;
+  el.classList.remove("invalid");
+});
+stage.addEventListener("keydown", (e) => {
+  if (e.key === "Enter" && e.target.dataset.filter) e.preventDefault(); // Entrée dans le filtre ne valide pas l'étape
+});
+stage.addEventListener("focusin", (e) => {
+  const ed = e.target.closest?.(".editable"); if (!ed) return;
+  document.execCommand("defaultParagraphSeparator", false, "p");
+  if (!ed.innerHTML.trim()) {
+    ed.innerHTML = "<p><br></p>";
+    const r = document.createRange(); r.setStart(ed.firstChild, 0); r.collapse(true);
+    const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r);
+  }
+});
+stage.addEventListener("paste", (e) => {
+  const ed = e.target.closest?.(".editable"); if (!ed) return;
+  e.preventDefault();
+  const html = e.clipboardData.getData("text/html"), text = e.clipboardData.getData("text/plain");
+  if (html) document.execCommand("insertHTML", false, sanitizeHTML(html));
+  else document.execCommand("insertText", false, text);
+  syncEditor(ed);
+});
+stage.addEventListener("drop", (e) => {
+  if (e.target.closest?.(".editable") && e.dataTransfer?.files?.length) e.preventDefault(); // pas d'image déposée dans le texte
+});
+document.addEventListener("selectionchange", updateToolbar);
+
+$("#form").addEventListener("submit", (e) => {
+  e.preventDefault();
+  if (cur() === "type") return;
+  if (!validate()) return;
+  if (cur() === "recap") { send(); return; }
+  state.step++; render(); window.scrollTo({ top: 0 });
+});
+
+if (WEB3FORMS_KEY === "VOTRE_CLE_WEB3FORMS") $("#demoBanner").hidden = false;
+render();
+</script>
+</body>
+</html>
