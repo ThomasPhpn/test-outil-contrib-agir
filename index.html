@@ -565,11 +565,14 @@ async function send() {
       method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json" }, body: JSON.stringify(payload),
     });
     const json = await res.json().catch(() => ({}));
-    if (!res.ok || !json.ok) throw new Error(res.status === 400 && json.error ? json.error : "");
+    if (!res.ok || !json.ok) throw Object.assign(new Error(json.error || ""), { status: res.status });
     state.sent = true; render();
   } catch (err) {
     btn.disabled = false; btn.textContent = "Envoyer ma contribution";
-    setErr("e_send", err.message ? `L'envoi a été refusé : ${err.message}` : "L'envoi a échoué. Vérifiez votre connexion et réessayez.");
+    const code = err.status ? ` (code ${err.status})` : "";
+    setErr("e_send", err.message ? `L'envoi a échoué : ${err.message}${code}`
+      : err.status ? `L'envoi a échoué${code}. Réessayez dans quelques instants.`
+      : "L'envoi a échoué. Vérifiez votre connexion et réessayez.");
   }
 }
 
