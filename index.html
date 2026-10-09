@@ -565,7 +565,7 @@ async function send() {
       method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json" }, body: JSON.stringify(payload),
     });
     const json = await res.json().catch(() => ({}));
-    if (!res.ok || !json.ok) throw Object.assign(new Error(json.error || ""), { status: res.status });
+    if (!res.ok || !json.ok) throw Object.assign(new Error(typeof json.error === "string" ? json.error : ""), { status: res.status });
     state.sent = true; render();
   } catch (err) {
     btn.disabled = false; btn.textContent = "Envoyer ma contribution";
