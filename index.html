@@ -127,7 +127,7 @@
   <p class="lead">Quelques étapes pour nous transmettre votre actualité, votre événement ou une mise à jour d'article.</p>
 
   <div id="demoBanner" class="banner" hidden>
-    Mode démo : aucune clé Web3Forms n'est configurée, le formulaire n'envoie rien. Voir la constante <code>WEB3FORMS_KEY</code> dans le code.
+    Mode démo : la page est ouverte en local, rien n'est envoyé. Ce qui serait envoyé s'affiche dans la console du navigateur.
   </div>
 
   <div id="progress" class="progress" aria-hidden="true"></div>
@@ -144,10 +144,10 @@
 
 <script>
 /* ============ CONFIGURATION ============ */
-// 1. Allez sur https://web3forms.com, saisissez thomas.philipponneau@golive.team
-// 2. Collez ici la clé d'accès reçue par email.
-const WEB3FORMS_KEY = "VOTRE_CLE_WEB3FORMS";
-const SITE_NAME = "Site – contributions";
+// Les contributions sont envoyées à la fonction Vercel api/submit.js, qui les transmet par email (Resend).
+// Ouverte en local (fichier), la page est en mode démo : rien n'est envoyé, le contenu s'affiche dans la console.
+const ENDPOINT = "/api/submit";
+const DEMO = location.protocol === "file:";
 
 /* ============ RÉFÉRENTIELS ============ */
 const SOUS_RUBRIQUES = [
@@ -350,11 +350,6 @@ function displayValue(f, v) {
   if (f.type === "date") return v.split("-").reverse().join("/");
   return v;
 }
-function messageValue(f, v) {
-  if (f.type === "wysiwyg") return htmlToText(v);
-  return displayValue(f, v);
-}
-
 /* ============ RENDU ============ */
 function renderProgress() {
   const st = steps();
@@ -506,53 +501,46 @@ function validate() {
 }
 
 /* ============ ENVOI ============ */
-function buildMessage() {
-  const lines = [`Cible(s) : ${targetLabels().join(", ")}`, `Type de contenu : ${typeObj().label}`, ""];
-  for (const f of flatFields(typeObj())) {
-    const v = state.data[f.id];
-    if (hasValue(f, v)) lines.push(`${f.label} :\n${messageValue(f, v)}\n`);
-  }
-  const meds = typeObj().skipMedia ? [] : state.media.filter((m) => m.url.trim());
-  if (meds.length) { lines.push("Médias :"); meds.forEach((m) => lines.push(`- ${m.url}${m.legende ? " (" + m.legende + ")" : ""}`)); lines.push(""); }
-  lines.push("Contact :", `${state.contact.nom} <${state.contact.email}>`);
-  return lines.join("\n");
+function fieldPayload(f, v) {
+  const base = { id: f.id, label: f.label, type: f.type };
+  if (f.type === "multicheck") return { ...base, valeur: v.map((id) => ({ id, label: optLabel(f, id) })) };
+  if (f.type === "select") return { ...base, valeur: Array.isArray(f.options[0]) ? { id: v, label: optLabel(f, v) } : v };
+  if (f.type === "wysiwyg") { const html = sanitizeHTML(v); return { ...base, valeur: html, texte: htmlToText(html) }; }
+  return { ...base, valeur: String(v).trim() };
+}
+
+function buildPayload() {
+  const t = typeObj();
+  return {
+    cibles: TARGETS.filter((x) => state.targets.includes(x.id)).map(({ id, label }) => ({ id, label })),
+    type: { id: t.id, label: t.label },
+    champs: flatFields(t).filter((f) => hasValue(f, state.data[f.id])).map((f) => fieldPayload(f, state.data[f.id])),
+    medias: t.skipMedia ? [] : state.media.filter((m) => m.url.trim()).map((m) => ({ url: m.url.trim(), legende: m.legende.trim() })),
+    contact: { nom: state.contact.nom.trim(), email: state.contact.email.trim() },
+    botcheck: "",
+  };
 }
 
 async function send() {
   const btn = $("#next"); btn.disabled = true; btn.textContent = "Envoi en cours…";
   setErr("e_send", "");
   if ($("#botcheck").value) { state.sent = true; render(); return; } // robot : on fait semblant
-  const title = state.data.titre || state.data.url_article || "";
-  const payload = {
-    access_key: WEB3FORMS_KEY,
-    subject: `[${targetLabels().join(", ")}] ${typeObj().label}${title ? " – " + title : ""}`,
-    from_name: SITE_NAME,
-    name: state.contact.nom,
-    email: state.contact.email,
-    message: buildMessage(),
-    cible: targetLabels().join(", "),
-    type_de_contenu: typeObj().label,
-    botcheck: "",
-  };
-  // Version HTML du texte enrichi, prête à coller dans le back-office (mode « Source »)
-  for (const f of flatFields(typeObj())) {
-    if (f.type === "wysiwyg" && hasValue(f, state.data[f.id])) payload[`${f.id}_html`] = sanitizeHTML(state.data[f.id]);
-  }
-  if (WEB3FORMS_KEY === "VOTRE_CLE_WEB3FORMS") {
-    console.log("Mode démo – payload :", payload);
-    console.log(payload.message);
+  const payload = buildPayload();
+  if (DEMO) {
+    console.log("Mode démo – données envoyées :", payload);
+    console.log(JSON.stringify(payload, null, 2));
     await new Promise((r) => setTimeout(r, 600)); state.sent = true; render(); return;
   }
   try {
-    const res = await fetch("https://api.web3forms.com/submit", {
+    const res = await fetch(ENDPOINT, {
       method: "POST", headers: { "Content-Type": "application/json", Accept: "application/json" }, body: JSON.stringify(payload),
     });
-    const json = await res.json();
-    if (!res.ok || !json.success) throw new Error(json.message || "Erreur");
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok || !json.ok) throw new Error(res.status === 400 && json.error ? json.error : "");
     state.sent = true; render();
   } catch (err) {
     btn.disabled = false; btn.textContent = "Envoyer ma contribution";
-    setErr("e_send", "L'envoi a échoué. Vérifiez votre connexion et réessayez.");
+    setErr("e_send", err.message ? `L'envoi a été refusé : ${err.message}` : "L'envoi a échoué. Vérifiez votre connexion et réessayez.");
   }
 }
 
@@ -686,7 +674,7 @@ $("#form").addEventListener("submit", (e) => {
   state.step++; render(); window.scrollTo({ top: 0 });
 });
 
-if (WEB3FORMS_KEY === "VOTRE_CLE_WEB3FORMS") $("#demoBanner").hidden = false;
+if (DEMO) $("#demoBanner").hidden = false;
 render();
 </script>
 </body>
