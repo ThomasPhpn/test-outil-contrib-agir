@@ -86,7 +86,7 @@ function normalize(d) {
     .map((m) => ({ url: str(m?.url, 2000), legende: str(m?.legende, 500) }))
     .filter((m) => /^https?:\/\//i.test(m.url));
 
-  const contact = { nom: str(d.contact?.nom, 200), email: str(d.contact?.email, 200) };
+  const contact = { nom: str(d.contact?.nom, 200), email: str(d.contact?.email, 200), commentaire: str(d.contact?.commentaire, 5000) };
   if (!contact.nom) throw new Error("Nom manquant.");
   if (!EMAIL_RE.test(contact.email)) throw new Error("Adresse email invalide.");
 
@@ -100,7 +100,7 @@ function valueHTML(c) {
   if (Array.isArray(v)) return esc(v.map((x) => x?.label ?? x).join(", "));
   if (v && typeof v === "object") return esc(v.label);
   if (c.type === "date") return esc(frDate(v));
-  if (c.type === "url" && /^https?:\/\//i.test(v)) return `<a href="${esc(v)}" style="color:#2457d6">${esc(v)}</a>`;
+  if (c.type === "url" && /^https?:\/\//i.test(v)) return `<a href="${esc(v)}" style="color:#273962">${esc(v)}</a>`;
   return esc(v).replace(/\n/g, "<br>");
 }
 function valueText(c) {
@@ -117,29 +117,33 @@ function buildEmail(k) {
   const subject = `[${k.cibles.map((c) => c.label).join(", ")}] ${k.type.label}${titre ? " – " + titre : ""}`.slice(0, 250);
   const recu = new Date(k.recu_le).toLocaleString("fr-FR", { timeZone: "Europe/Paris", dateStyle: "long", timeStyle: "short" });
 
-  const td = "padding:12px 0;border-top:1px solid #e5e8ee;vertical-align:top;";
+  const td = "padding:12px 0;border-top:1px solid #d9dfeb;vertical-align:top;";
   const rows = k.champs.map((c) => `<tr>
-      <td style="${td}width:170px;padding-right:16px;color:#6b7686;font-size:13px">${esc(c.label)}</td>
+      <td style="${td}width:170px;padding-right:16px;color:#535353;font-size:13px">${esc(c.label)}</td>
       <td style="${td}font-size:15px;line-height:1.5">${c.type === "wysiwyg"
         ? `<div style="border-left:3px solid #d9dee6;padding-left:14px">${valueHTML(c)}</div>` : valueHTML(c)}</td></tr>`).join("");
-  const mediasRow = k.medias.length ? `<tr><td style="${td}padding-right:16px;color:#6b7686;font-size:13px">Médias</td><td style="${td}font-size:15px">${
-    k.medias.map((m) => `<a href="${esc(m.url)}" style="color:#2457d6">${esc(m.url)}</a>${m.legende ? " — " + esc(m.legende) : ""}`).join("<br>")}</td></tr>` : "";
+  const mediasRow = k.medias.length ? `<tr><td style="${td}padding-right:16px;color:#535353;font-size:13px">Médias</td><td style="${td}font-size:15px">${
+    k.medias.map((m) => `<a href="${esc(m.url)}" style="color:#273962">${esc(m.url)}</a>${m.legende ? " — " + esc(m.legende) : ""}`).join("<br>")}</td></tr>` : "";
   const codeBlocks = k.champs.filter((c) => c.type === "wysiwyg" && c.valeur).map((c) => `
       <h2 style="font-size:16px;margin:32px 0 6px">Code HTML · ${esc(c.label)}</h2>
-      <p style="margin:0 0 8px;color:#6b7686;font-size:13px">À coller dans l'éditeur du back-office, en mode « Source ».</p>
-      <pre style="margin:0;background:#f6f7f9;border:1px solid #e5e8ee;border-radius:8px;padding:12px;font-size:12px;line-height:1.5;white-space:pre-wrap;word-break:break-word">${esc(prettyHTML(c.valeur))}</pre>`).join("");
+      <p style="margin:0 0 8px;color:#535353;font-size:13px">À coller dans l'éditeur du back-office, en mode « Source ».</p>
+      <pre style="margin:0;background:#eceff5;border:1px solid #d9dfeb;border-radius:8px;padding:12px;font-size:12px;line-height:1.5;white-space:pre-wrap;word-break:break-word">${esc(prettyHTML(c.valeur))}</pre>`).join("");
 
   const html = `<!doctype html><html lang="fr"><body style="margin:0;background:#ffffff">
-  <div style="font-family:Arial,Helvetica,sans-serif;color:#1c2430;max-width:720px;margin:0 auto;padding:24px 16px">
-    <p style="margin:0 0 4px;color:#6b7686;font-size:13px">Nouvelle contribution reçue le ${esc(recu)}</p>
+  <div style="font-family:Marianne,Arial,Helvetica,sans-serif;color:#050d3c;max-width:720px;margin:0 auto;padding:24px 16px">
+    <p style="margin:0 0 4px;color:#535353;font-size:13px">Nouvelle contribution reçue le ${esc(recu)}</p>
     <h1 style="font-size:22px;line-height:1.3;margin:0 0 12px">${esc(titre || k.type.label)}</h1>
     <p style="margin:0 0 20px">${[...k.cibles.map((c) => c.label), k.type.label].map((l) =>
-      `<span style="display:inline-block;background:#eef3ff;color:#1b44a8;border-radius:999px;padding:3px 12px;font-size:13px;font-weight:bold;margin:0 6px 6px 0">${esc(l)}</span>`).join("")}</p>
+      `<span style="display:inline-block;background:#d9dfeb;color:#28386f;border-radius:999px;padding:3px 12px;font-size:13px;font-weight:bold;margin:0 6px 6px 0">${esc(l)}</span>`).join("")}</p>${k.contact.commentaire ? `
+    <div style="background:#fffadb;border:1px solid #efd54c;border-radius:8px;padding:12px 14px;margin:0 0 20px">
+      <p style="margin:0 0 4px;font-size:13px;font-weight:bold">Commentaire de ${esc(k.contact.nom)}</p>
+      <p style="margin:0;font-size:15px;line-height:1.5">${esc(k.contact.commentaire).replace(/\n/g, "<br>")}</p>
+    </div>` : ""}
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse">${rows}${mediasRow}
-      <tr><td style="${td}padding-right:16px;color:#6b7686;font-size:13px">Contact</td>
-        <td style="${td}font-size:15px">${esc(k.contact.nom)} · <a href="mailto:${esc(k.contact.email)}" style="color:#2457d6">${esc(k.contact.email)}</a></td></tr>
+      <tr><td style="${td}padding-right:16px;color:#535353;font-size:13px">Contact</td>
+        <td style="${td}font-size:15px">${esc(k.contact.nom)} · <a href="mailto:${esc(k.contact.email)}" style="color:#273962">${esc(k.contact.email)}</a></td></tr>
     </table>${codeBlocks}
-    <p style="margin:32px 0 0;color:#6b7686;font-size:12px">Répondre à cet email écrit directement à ${esc(k.contact.nom)}. Les données complètes sont jointes au format JSON.</p>
+    <p style="margin:32px 0 0;color:#535353;font-size:12px">Répondre à cet email écrit directement à ${esc(k.contact.nom)}. Les données complètes sont jointes au format JSON.</p>
   </div></body></html>`;
 
   const text = [
@@ -147,6 +151,7 @@ function buildEmail(k) {
     ...k.champs.flatMap((c) => [`${c.label} :`, valueText(c), ""]),
     ...(k.medias.length ? ["Médias :", ...k.medias.map((m) => `- ${m.url}${m.legende ? " (" + m.legende + ")" : ""}`), ""] : []),
     "Contact :", `${k.contact.nom} <${k.contact.email}>`,
+    ...(k.contact.commentaire ? ["", "Commentaire du contributeur :", k.contact.commentaire] : []),
   ].join("\n");
 
   const day = k.recu_le.slice(0, 10);

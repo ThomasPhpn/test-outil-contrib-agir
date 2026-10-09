@@ -5,72 +5,95 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Proposer un contenu</title>
 <style>
+  /* Polices Marianne (fichiers dans /fonts, issus du Système de design de l'État) */
+  @font-face { font-family: "Marianne"; src: url("fonts/Marianne-Regular.woff2") format("woff2"); font-weight: 400; font-style: normal; font-display: swap; }
+  @font-face { font-family: "Marianne"; src: url("fonts/Marianne-Medium.woff2") format("woff2"); font-weight: 500; font-style: normal; font-display: swap; }
+  @font-face { font-family: "Marianne"; src: url("fonts/Marianne-Bold.woff2") format("woff2"); font-weight: 700; font-style: normal; font-display: swap; }
+
+  /* Couleurs et formes reprises du site */
   :root {
-    --bg: #f6f7f9; --card: #fff; --text: #1c2430; --muted: #6b7686;
-    --primary: #2457d6; --primary-dark: #1b44a8; --border: #d9dee6;
-    --ok: #1d8a4e; --err: #c0392b; --radius: 14px;
+    --bg: #eceff5;            /* blue-50 */
+    --card: #fff;
+    --text: #050d3c;          /* blue-900 : titres et texte */
+    --muted: #535353;         /* grey-700 */
+    --primary: #273962;       /* color-primary */
+    --primary-dark: #152153;  /* blue-800 */
+    --primary-soft: #eceff5;  /* blue-50 */
+    --tag-bg: #d9dfeb;        /* blue-100 */
+    --tag-text: #28386f;      /* blue-700 */
+    --border: #d9dfeb;        /* blue-100 */
+    --field-border: #a3a3a3;  /* grey-300 */
+    --ok: #117d5e;            /* green-700 */
+    --err: #af0500;           /* color-error */
+    --err-bg: #fee6e6;
+    --focus: #006ddd;         /* color-info */
+    --warn-bg: #fffadb;       /* yellow-100 */
+    --warn-border: #efd54c;   /* yellow-600 */
+    --radius: 16px;           /* border-radius-primary (1.6rem sur le site) */
+    --radius-field: 4px;
   }
   * { box-sizing: border-box; }
   body {
     margin: 0; background: var(--bg); color: var(--text);
-    font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    font: 16px/1.5 "Marianne", Arial, sans-serif;
   }
-  .wrap { max-width: 760px; margin: 0 auto; padding: 24px 16px 64px; }
-  h1 { font-size: 1.5rem; margin: 8px 0 4px; }
-  .lead { color: var(--muted); margin: 0 0 24px; }
+  .wrap { max-width: 800px; margin: 0 auto; padding: 32px 16px 64px; }
+  h1 { font-size: clamp(2rem, 5vw, 2.5rem); line-height: 1.1; font-weight: 700; margin: 8px 0 8px; }
+  .lead { color: var(--muted); font-size: 1.0625rem; margin: 0 0 28px; }
   .progress { display: flex; gap: 6px; margin-bottom: 8px; }
-  .progress span { flex: 1; height: 6px; border-radius: 3px; background: var(--border); transition: background .2s; }
+  .progress span { flex: 1; height: 6px; border-radius: 3px; background: var(--tag-bg); transition: background .2s; }
   .progress span.done { background: var(--primary); }
   .step-label { color: var(--muted); font-size: .875rem; margin-bottom: 16px; }
-  .card { background: var(--card); border-radius: var(--radius); padding: 24px; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
-  h2 { font-size: 1.25rem; margin: 0 0 16px; }
-  h2 + .hint { margin-top: -10px; margin-bottom: 14px; }
+  .card { background: var(--card); border-radius: var(--radius); padding: 32px; }
+  @media (max-width: 520px) { .card { padding: 20px; } }
+  h2 { font-size: 1.5rem; line-height: 1.25; font-weight: 700; margin: 0 0 20px; }
+  h2 + .hint { margin-top: -12px; margin-bottom: 16px; }
   .choices { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
   .choice {
-    position: relative; text-align: left; background: var(--card); border: 2px solid var(--border); border-radius: 12px;
-    padding: 16px; cursor: pointer; font: inherit; color: inherit; transition: border-color .15s, background .15s;
+    position: relative; text-align: left; background: var(--card); border: 2px solid var(--border); border-radius: var(--radius);
+    padding: 18px; cursor: pointer; font: inherit; color: inherit; transition: border-color .15s, background .15s;
   }
   .choice:hover { border-color: var(--primary); }
   .choice:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visible, select:focus-visible, .editable:focus-visible {
-    outline: 3px solid rgba(36,87,214,.35); outline-offset: 2px;
+    outline: 2px solid var(--focus); outline-offset: 2px;
   }
-  .choice.selected { border-color: var(--primary); background: #eef3ff; }
-  .choice.multi { padding-right: 44px; }
+  .choice.selected { border-color: var(--primary); background: var(--primary-soft); }
+  .choice.multi { padding-right: 46px; }
   .choice.multi::after {
-    content: ""; position: absolute; top: 16px; right: 16px; width: 18px; height: 18px;
-    border: 2px solid var(--border); border-radius: 5px; background: #fff;
+    content: ""; position: absolute; top: 18px; right: 18px; width: 18px; height: 18px;
+    border: 2px solid var(--field-border); border-radius: 4px; background: #fff;
   }
   .choice.multi.selected::after {
     content: "✓"; border-color: var(--primary); background: var(--primary); color: #fff;
     font-size: 13px; line-height: 14px; text-align: center; font-weight: 700;
   }
-  .choice strong { display: block; margin-bottom: 4px; }
-  .choice small { color: var(--muted); }
-  .field { margin-bottom: 18px; }
-  label { display: block; font-weight: 600; margin-bottom: 4px; }
-  .field-label { display: block; font-weight: 600; margin-bottom: 4px; }
+  .choice strong { display: block; font-weight: 700; margin-bottom: 4px; }
+  .choice small { color: var(--muted); font-size: .875rem; }
+  .field { margin-bottom: 20px; }
+  label, .field-label { display: block; font-weight: 500; margin-bottom: 4px; }
   label .opt, .field-label .opt { font-weight: 400; color: var(--muted); }
-  .hint { color: var(--muted); font-size: .85rem; margin: 2px 0 6px; }
-  .hint strong { color: var(--text); font-weight: 600; }
+  .hint { color: var(--muted); font-size: .875rem; margin: 2px 0 6px; }
+  .hint strong { color: var(--text); font-weight: 700; }
   input[type=text], input[type=url], input[type=email], input[type=date], input[type=time], input[type=search], textarea, select {
-    width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px;
+    width: 100%; padding: 10px 12px; border: 1px solid var(--field-border); border-radius: var(--radius-field);
     font: inherit; background: #fff; color: inherit;
   }
+  input:hover, textarea:hover, select:hover { border-color: var(--primary); }
   textarea { min-height: 120px; resize: vertical; }
   .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
   @media (max-width: 520px) { .row { grid-template-columns: 1fr; } }
-  .invalid { border-color: var(--err) !important; }
-  .error { color: var(--err); font-size: .85rem; margin-top: 4px; }
-  .nav { display: flex; justify-content: space-between; gap: 12px; margin-top: 24px; }
+  .invalid { border-color: var(--err) !important; background-color: var(--err-bg) !important; }
+  .error { color: var(--err); font-size: .875rem; margin-top: 4px; }
+  .nav { display: flex; justify-content: space-between; gap: 12px; margin-top: 28px; }
   button.btn {
-    border: 0; border-radius: 10px; padding: 12px 20px; font: inherit; font-weight: 600; cursor: pointer;
+    border: 0; border-radius: var(--radius); padding: 12px 24px; font: inherit; font-weight: 500; cursor: pointer;
   }
   .btn-primary { background: var(--primary); color: #fff; }
   .btn-primary:hover { background: var(--primary-dark); }
   .btn-primary:disabled { opacity: .6; cursor: wait; }
-  .btn-ghost { background: transparent; color: var(--muted); border: 1px solid var(--border) !important; }
-  .btn-ghost:hover { color: var(--text); }
-  .btn-small { padding: 8px 14px; font-size: .9rem; }
+  .btn-ghost { background: transparent; color: var(--primary); border: 1px solid var(--primary) !important; }
+  .btn-ghost:hover { background: var(--primary-soft); }
+  .btn-small { padding: 8px 16px; font-size: .9rem; }
   .media-item { display: grid; grid-template-columns: 1.4fr 1fr auto; gap: 8px; margin-bottom: 8px; align-items: start; }
   @media (max-width: 520px) { .media-item { grid-template-columns: 1fr; } }
   .remove { background: none; border: 0; color: var(--err); cursor: pointer; font-size: 1.4rem; line-height: 1; padding: 6px; }
@@ -78,10 +101,10 @@
   /* Liste de cases à cocher filtrable */
   .checklist-tools { display: flex; gap: 10px; align-items: center; margin-bottom: 8px; }
   .checklist-tools input { flex: 1; }
-  .count { color: var(--muted); font-size: .85rem; white-space: nowrap; }
+  .count { color: var(--muted); font-size: .875rem; white-space: nowrap; }
   .checklist {
     display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 0 16px;
-    max-height: 264px; overflow: auto; border: 1px solid var(--border); border-radius: 10px; padding: 8px 12px;
+    max-height: 264px; overflow: auto; border: 1px solid var(--field-border); border-radius: var(--radius-field); padding: 8px 12px;
   }
   .checklist:focus { outline: none; }
   .checklist label { font-weight: 400; display: flex; gap: 8px; align-items: flex-start; margin: 0; padding: 5px 0; cursor: pointer; }
@@ -89,35 +112,35 @@
   .checklist .empty { color: var(--muted); margin: 4px 0; }
 
   /* Éditeur de texte enrichi */
-  .editor { border: 1px solid var(--border); border-radius: 10px; background: #fff; overflow: hidden; }
-  .toolbar { display: flex; flex-wrap: wrap; gap: 2px; padding: 6px; border-bottom: 1px solid var(--border); background: #f9fafb; }
+  .editor { border: 1px solid var(--field-border); border-radius: var(--radius-field); background: #fff; overflow: hidden; }
+  .toolbar { display: flex; flex-wrap: wrap; gap: 2px; padding: 6px; border-bottom: 1px solid var(--border); background: #f6f7fa; }
   .toolbar button {
-    border: 0; background: transparent; border-radius: 6px; padding: 5px 9px; min-width: 34px;
+    border: 0; background: transparent; border-radius: 4px; padding: 5px 9px; min-width: 34px;
     font: inherit; font-size: .9rem; cursor: pointer; color: var(--text);
   }
-  .toolbar button:hover { background: #eceff4; }
-  .toolbar button[aria-pressed="true"] { background: #dfe8ff; color: var(--primary-dark); }
+  .toolbar button:hover { background: var(--primary-soft); }
+  .toolbar button[aria-pressed="true"] { background: var(--tag-bg); color: var(--primary); }
   .toolbar .sep { width: 1px; background: var(--border); margin: 4px 4px; }
   .editable { position: relative; min-height: 240px; max-height: 520px; overflow: auto; padding: 12px 14px; outline: none; }
   .editable.is-empty::before { content: attr(data-placeholder); position: absolute; color: var(--muted); pointer-events: none; }
   .editable.invalid { box-shadow: inset 0 0 0 2px var(--err); }
   .editable > :first-child, .rich > :first-child { margin-top: 0; }
   .editable p, .rich p { margin: 0 0 .8em; }
-  .editable h2, .rich h2 { font-size: 1.25rem; margin: 1em 0 .4em; }
-  .editable h3, .rich h3 { font-size: 1.08rem; margin: 1em 0 .4em; }
-  .editable blockquote, .rich blockquote { margin: 0 0 .8em; padding-left: 12px; border-left: 3px solid var(--border); color: #3d4757; }
+  .editable h2, .rich h2 { font-size: 1.375rem; margin: 1em 0 .4em; }
+  .editable h3, .rich h3 { font-size: 1.125rem; margin: 1em 0 .4em; }
+  .editable blockquote, .rich blockquote { margin: 0 0 .8em; padding-left: 14px; border-left: 3px solid var(--primary); }
   .editable ul, .editable ol, .rich ul, .rich ol { margin: 0 0 .8em; padding-left: 1.4em; }
   .editable a, .rich a { color: var(--primary); }
 
   .recap dl { margin: 0; }
-  .recap dt { font-weight: 600; margin-top: 14px; color: var(--muted); font-size: .85rem; }
+  .recap dt { font-weight: 500; margin-top: 16px; color: var(--muted); font-size: .875rem; }
   .recap dd { margin: 2px 0 0; white-space: pre-wrap; word-break: break-word; }
-  .recap dd.rich { white-space: normal; border-left: 3px solid var(--border); padding-left: 12px; }
-  .tag { display: inline-block; background: #eef3ff; color: var(--primary-dark); border-radius: 999px; padding: 2px 12px; font-size: .85rem; font-weight: 600; margin: 0 6px 6px 0; }
+  .recap dd.rich { white-space: normal; border-left: 3px solid var(--border); padding-left: 14px; }
+  .tag { display: inline-block; background: var(--tag-bg); color: var(--tag-text); border-radius: 999px; padding: 3px 12px; font-size: .875rem; font-weight: 500; margin: 0 6px 6px 0; }
   .hp { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
   .success { text-align: center; padding: 16px 0; }
   .success .check { font-size: 3rem; color: var(--ok); }
-  .banner { background: #fff7e0; border: 1px solid #f0d98a; border-radius: 10px; padding: 10px 14px; margin-bottom: 16px; font-size: .9rem; }
+  .banner { background: var(--warn-bg); border: 1px solid var(--warn-border); border-radius: var(--radius-field); padding: 10px 14px; margin-bottom: 16px; font-size: .9rem; }
   [hidden] { display: none !important; }
 </style>
 </head>
@@ -192,7 +215,8 @@ const TYPES = [
       { id: "titre", label: "Titre", type: "text", required: true },
       { id: "sous_rubriques", label: "Sous-rubriques", type: "multicheck", required: true, options: SOUS_RUBRIQUES,
         hint: "Une ou plusieurs sous-rubriques.", requiredMsg: "Choisissez au moins une sous-rubrique." },
-      { id: "localisation", label: "Localisation", type: "select", required: false, options: LOCALISATIONS, placeholder: "- Aucun(e) -" },
+      { id: "localisation", label: "Localisation", type: "select", required: false, options: LOCALISATIONS, placeholder: "- Aucun(e) -",
+        hideIf: () => state.targets.length === 1 && state.targets[0] === "particuliers" },
       { id: "chapo", label: "Chapô", type: "textarea", required: true, hint: "2 à 3 phrases qui résument l'actualité.", rows: 3 },
       { id: "contenu", label: "Contenu", type: "wysiwyg", required: true,
         placeholder: "Rédigez ou collez votre texte. Utilisez les intertitres pour structurer l'article." },
@@ -256,7 +280,7 @@ const ALL_STEPS = [
   { id: "cible", label: "Cible" }, { id: "type", label: "Type de contenu" }, { id: "details", label: "Détails" },
   { id: "medias", label: "Médias" }, { id: "contact", label: "Contact" }, { id: "recap", label: "Récapitulatif" },
 ];
-const emptyState = () => ({ step: 0, targets: [], type: null, data: {}, media: [{ url: "", legende: "" }], contact: { nom: "", email: "" }, sent: false });
+const emptyState = () => ({ step: 0, targets: [], type: null, data: {}, media: [{ url: "", legende: "" }], contact: { nom: "", email: "", commentaire: "" }, sent: false });
 const state = emptyState();
 
 const $ = (s) => document.querySelector(s);
@@ -265,7 +289,8 @@ const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "
 const norm = (s) => String(s).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 const typeObj = () => TYPES.find((t) => t.id === state.type);
 const targetLabels = () => TARGETS.filter((t) => state.targets.includes(t.id)).map((t) => t.label);
-const flatFields = (t) => t.fields.flatMap((f) => (f.row ? f.row : [f]));
+const shown = (f) => !f.hideIf?.(); // champ affiché selon les choix précédents
+const flatFields = (t) => t.fields.flatMap((f) => (f.row ? f.row : [f])).filter(shown);
 const steps = () => ALL_STEPS.filter((s) => !(s.id === "medias" && typeObj()?.skipMedia));
 const cur = () => steps()[state.step].id;
 const pairs = (f) => f.options.map((o) => (Array.isArray(o) ? o : [o, o]));
@@ -427,7 +452,7 @@ function render() {
     html = `<h2>Quel type de contenu souhaitez-vous proposer ?</h2><div class="choices">${TYPES.map((t) => `
       <button type="button" class="choice ${state.type === t.id ? "selected" : ""}" data-type="${t.id}"><strong>${esc(t.label)}</strong><small>${esc(t.desc)}</small></button>`).join("")}</div>`;
   } else if (id === "details") {
-    html = `<h2>${esc(typeObj().label)}</h2>` + typeObj().fields.map((f) => f.row ? `<div class="row">${f.row.map(fieldHTML).join("")}</div>` : fieldHTML(f)).join("");
+    html = `<h2>${esc(typeObj().label)}</h2>` + typeObj().fields.filter(shown).map((f) => f.row ? `<div class="row">${f.row.filter(shown).map(fieldHTML).join("")}</div>` : fieldHTML(f)).join("");
   } else if (id === "medias") {
     html = `<h2>Y a-t-il des médias à associer ?</h2><p class="hint">Photos, vidéos, documents : collez un lien (Drive, WeTransfer, YouTube…). Étape facultative.</p>
       <div id="mediaList">${mediaHTML()}</div>
@@ -435,7 +460,10 @@ function render() {
   } else if (id === "contact") {
     html = `<h2>Contact</h2>
       <div class="field"><label for="c_nom">Nom et prénom</label><input type="text" id="c_nom" data-c="nom" value="${esc(state.contact.nom)}"><div class="error" id="e_nom" hidden></div></div>
-      <div class="field"><label for="c_email">Email</label><input type="email" id="c_email" data-c="email" value="${esc(state.contact.email)}"><div class="error" id="e_email" hidden></div></div>`;
+      <div class="field"><label for="c_email">Email</label><input type="email" id="c_email" data-c="email" value="${esc(state.contact.email)}"><div class="error" id="e_email" hidden></div></div>
+      <div class="field"><label for="c_commentaire">Commentaire${typeObj()?.hideOptional ? "" : ' <span class="opt">(facultatif)</span>'}</label>
+        <div class="hint">Une précision pour notre équipe : contexte, échéance, personne à contacter…</div>
+        <textarea id="c_commentaire" data-c="commentaire" rows="4">${esc(state.contact.commentaire)}</textarea></div>`;
   } else {
     nextLabel = "Envoyer ma contribution";
     const items = flatFields(typeObj()).filter((f) => hasValue(f, state.data[f.id])).map((f) => {
@@ -447,7 +475,8 @@ function render() {
     html = `<h2>Vérifiez votre contribution</h2><div class="recap">
       ${targetLabels().map((l) => `<span class="tag">${esc(l)}</span>`).join("")}<span class="tag">${esc(typeObj().label)}</span>
       <dl>${items}${meds ? `<dt>Médias</dt><dd>${esc(meds)}</dd>` : ""}
-      <dt>Contact</dt><dd>${esc(state.contact.nom)} · ${esc(state.contact.email)}</dd></dl></div>
+      <dt>Contact</dt><dd>${esc(state.contact.nom)} · ${esc(state.contact.email)}</dd>
+      ${state.contact.commentaire.trim() ? `<dt>Commentaire</dt><dd>${esc(state.contact.commentaire.trim())}</dd>` : ""}</dl></div>
       <div class="error" id="e_send" hidden></div>`;
   }
   stage.innerHTML = html;
@@ -516,7 +545,7 @@ function buildPayload() {
     type: { id: t.id, label: t.label },
     champs: flatFields(t).filter((f) => hasValue(f, state.data[f.id])).map((f) => fieldPayload(f, state.data[f.id])),
     medias: t.skipMedia ? [] : state.media.filter((m) => m.url.trim()).map((m) => ({ url: m.url.trim(), legende: m.legende.trim() })),
-    contact: { nom: state.contact.nom.trim(), email: state.contact.email.trim() },
+    contact: { nom: state.contact.nom.trim(), email: state.contact.email.trim(), commentaire: state.contact.commentaire.trim() },
     botcheck: "",
   };
 }
@@ -559,6 +588,7 @@ function syncEditor(ed) {
   state.data[ed.dataset.id] = ed.innerHTML;
   ed.classList.toggle("is-empty", !ed.textContent.replace(/\u00a0/g, " ").trim());
   ed.classList.remove("invalid");
+  const errEl = document.getElementById("e_" + ed.dataset.id); if (errEl) errEl.hidden = true;
 }
 function updateToolbar() {
   const ed = stage.querySelector(".editable"); if (!ed) return;
@@ -640,6 +670,8 @@ stage.addEventListener("input", (e) => {
   else if (el.dataset.c) state.contact[el.dataset.c] = el.value;
   else if (el.dataset.media !== undefined) state.media[+el.dataset.media][el.dataset.k] = el.value;
   el.classList.remove("invalid");
+  const errEl = document.getElementById("e_" + (el.dataset.id || el.dataset.c)); // le message disparaît dès qu'on corrige
+  if (errEl) errEl.hidden = true;
 });
 stage.addEventListener("keydown", (e) => {
   if (e.key === "Enter" && e.target.dataset.filter) e.preventDefault(); // Entrée dans le filtre ne valide pas l'étape
